@@ -120,6 +120,7 @@ if __name__ == '__main__':
 	utils.makedirs("results/")
 
 	##################################################################
+	# create data
 	data_obj = parse_datasets(args, device)
 	input_dim = data_obj["input_dim"]
 
@@ -190,6 +191,7 @@ if __name__ == '__main__':
 			).to(device)
 	elif args.ode_rnn:
 		# Create ODE-GRU model
+		# args.latents: Size of the latent state
 		n_ode_gru_dims = args.latents
 				
 		if args.poisson:
@@ -200,12 +202,23 @@ if __name__ == '__main__':
 
 		ode_func_net = utils.create_net(n_ode_gru_dims, n_ode_gru_dims, 
 			n_layers = args.rec_layers, n_units = args.units, nonlinear = nn.Tanh)
+		'''
+		ode func net: (input:latent size, output: latent size, n_layers: Number of layers in ODE func in recognition ODE
+						n_units: Number of units per layer in ODE func)
+		linear, tanh, linear, tanh, linear
+		'''
 
 		rec_ode_func = ODEFunc(
 			input_dim = input_dim, 
 			latent_dim = n_ode_gru_dims,
 			ode_func_net = ode_func_net,
 			device = device).to(device)
+		'''
+		make ode_func_net to nn.Module to do forward()
+		input_dim: dataset.size(-1)
+		input_dim = input_dim, 
+		latent_dim = latent size
+		'''
 
 		z0_diffeq_solver = DiffeqSolver(input_dim, rec_ode_func, "euler", args.latents, 
 			odeint_rtol = 1e-3, odeint_atol = 1e-4, device = device)
